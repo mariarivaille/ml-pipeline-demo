@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # === llama.cpp сервер (инференс модели) ===
+  llama-cpp:
+    build:
+      context: .
+      dockerfile: Dockerfile.llama
+    container_name: llama-cpp-server
+    ports:
+      - "8001:8001"
+    volumes:
+      - model_cache:/app/models
+    # Ресурсы для CPU
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # === FastAPI сервис (бизнес-логика) ===
+  chatbot-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatbot-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - LLAMA_CPP_URL=http://llama-cpp:8001
+      - MODEL_NAME=Qwen/Qwen2.5-0.5B-Instruct
+      - MAX_TOKENS=256
+      - LOG_LEVEL=INFO
+    volumes:
+      - model_cache:/app/models:ro
+    depends_on:
+      llama-cpp:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  model_cache:
+    driver: local
