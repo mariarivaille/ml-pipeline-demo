@@ -9,9 +9,8 @@ env/
 .env
 
 # Models
-models/*.gguf
-models/*.bin
-models/*.safetensors
+models/*
+!models/.gitkeep
 
 # IDE
 .vscode/
