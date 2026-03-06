@@ -2,7 +2,7 @@ name: ML CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "feat/base_logistic_regression" ]
 
 jobs:
   build-and-push:
@@ -30,4 +30,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/ml-demo:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/ml-demo-logreg:latest
