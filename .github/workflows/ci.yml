@@ -25,9 +25,12 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     # 4. Собираем и отправляем образ
-    - name: Build and Push Docker Image
+    - name: Build and Push Docker Image (Llama)
       uses: docker/build-push-action@v3
       with:
         context: .
+        dockerfile: Dockerfile.llama
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/ml-demo-qwen_local_chatbot:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/llama-cpp-qwen:latest
+        build-args: |
+          HF_TOKEN=${{ secrets.HF_TOKEN }}
