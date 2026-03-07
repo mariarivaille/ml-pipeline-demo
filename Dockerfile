@@ -22,9 +22,9 @@ COPY app/ ./app/
 # === Скачиваем модель при сборке ===
 ARG HF_TOKEN
 ARG MODEL_URL=https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
-ARG MODEL_PATH=/app/models/model.gguf
+ARG MODEL_PATH=/models/qwen2.5-0.5b-instruct-q5_k_m.gguf
 
-RUN mkdir -p /app/models && \
+RUN mkdir -p /models && \
     curl -L -H "Authorization: Bearer ${HF_TOKEN}" -o ${MODEL_PATH} ${MODEL_URL} && \
     ls -lh ${MODEL_PATH}
 
