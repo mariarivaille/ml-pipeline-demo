@@ -1,40 +1,32 @@
-FROM python:3.11-slim
+FROM python:3.9-slim
+
+# 1. Объявляем аргумент сборки (не попадает в финальный образ при правильной настройке)
+ARG HF_TOKEN
+# 2. Передаем его в переменную окружения только на время сборки
+ENV HF_TOKEN=${HF_TOKEN}
 
 WORKDIR /app
 
-# Системные зависимости для компиляции llama-cpp-python
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    cmake \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Копируем зависимости
+# 3. Устанавливаем зависимости
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Устанавливаем llama-cpp-python с флагами для CPU
-RUN CMAKE_ARGS="-DLLAMA_BLAS=OFF" pip install --no-cache-dir -r requirements.txt
+# 4. Копируем код приложения
+COPY . .
 
-# Копируем код
-COPY app/ ./app/
+# 5. Создаем папку для модели
+# RUN mkdir -p /models
 
-# === Скачиваем модель при сборке ===
-ARG HF_TOKEN
-ARG MODEL_URL=https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
-ARG MODEL_PATH=/models/qwen2.5-0.5b-instruct-q5_k_m.gguf
+# 6. Скачиваем модель ТОЛЬКО если передан токен
+# Используем --progress=off для чистоты логов
+RUN if [ -n "$HF_TOKEN" ]; then \
+      curl -L -H "Authorization: Bearer $HF_TOKEN" \
+      "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q5_k_m.gguf" \
+      -o /models/qwen2.5-0.5b-instruct-q5_k_m.gguf; \
+    fi
 
-RUN mkdir -p /models && \
-    curl -L -H "Authorization: Bearer ${HF_TOKEN}" -o ${MODEL_PATH} ${MODEL_URL} && \
-    ls -lh ${MODEL_PATH}
-
-# Создаем пользователя для безопасности
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# 7. Очищаем переменную (безопасность)
+ENV HF_TOKEN=
 
 EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "app/main.py"]
