@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # 1. Объявляем аргумент сборки (не попадает в финальный образ при правильной настройке)
 ARG HF_TOKEN
@@ -7,12 +7,21 @@ ENV HF_TOKEN=${HF_TOKEN}
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # 3. Устанавливаем зависимости
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 4. Копируем код приложения
 COPY . .
+
+ENV PYTHONPATH=/app
 
 # 5. Создаем папку для модели
 # RUN mkdir -p /models
@@ -29,4 +38,4 @@ RUN if [ -n "$HF_TOKEN" ]; then \
 ENV HF_TOKEN=
 
 EXPOSE 8000
-CMD ["python", "app/main.py"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

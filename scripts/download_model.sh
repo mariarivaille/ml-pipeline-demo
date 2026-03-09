@@ -4,7 +4,7 @@
 set -e
 
 MODEL_DIR="./models"
-MODEL_FILE="qwen2.5-0.5b-instruct-q4_k_m.gguf"
+MODEL_FILE="qwen2.5-0.5b-instruct-q5_k_m.gguf"
 MODEL_URL="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/${MODEL_FILE}"
 
 echo "📥 Скачивание модели Qwen2.5-0.5B..."
