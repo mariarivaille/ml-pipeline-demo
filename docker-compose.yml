@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   gigachat-bot:
-    build: .
+    # Для production: используем образ из Docker Hub
+    image: ${DOCKER_USERNAME:-yourusername}/gigachat-bot:latest
+    # Для local development: раскомментируйте строку ниже
+    # build: .
     container_name: gigachat-app
     restart: unless-stopped
     ports:
@@ -17,14 +20,25 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - .:/app
-  
-  # Сервис для запуска тестов (запускается вручную)
+      # Для local dev: монтируем код для hot-reload
+      # Для production: закомментируйте эту строку
+      - ./app:/app/app
+      - ./app/templates:/app/app/templates
+    networks:
+      - gigachat-network
+
+  # Сервис для запуска тестов (опционально)
   test:
     build: .
     container_name: gigachat-tests
     env_file:
       - .env
-    command: pytest tests/ -v
+    command: pytest tests/test_main.py -v
     profiles:
       - test
+    networks:
+      - gigachat-network
+
+networks:
+  gigachat-network:
+    driver: bridge
