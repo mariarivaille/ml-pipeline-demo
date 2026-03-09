@@ -3,76 +3,129 @@ import pickle
 import pandas as pd
 from pydantic import BaseModel, Field
 
-app = FastAPI()
+app = FastAPI(
+    title="Titanic Survival Predictor",
+    description="ML-сервис для предсказания выживания пассажиров Титаника на основе логистической регрессии",
+    version="1.0.0"
+)
 
 # Загружаем модель при старте
-with open('models/model.pkl', 'rb') as f:
+with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-# Описание входных данных (признаки Титаника)
+# Описание входных данных с полной валидацией и документацией
 class InputData(BaseModel):
     pclass: int = Field(
         ..., 
         ge=1, 
         le=3, 
-        description="Класс билета (1, 2 или 3)",
-        example=3
+        title="Класс билета",
+        description="Класс каюты пассажира: 1 = первый класс, 2 = второй класс, 3 = третий класс",
+        examples=[1, 2, 3]
     )
     sex: str = Field(
         ..., 
         pattern="^(male|female)$", 
-        description="Пол пассажира",
-        example="male"
+        title="Пол",
+        description="Пол пассажира. Допустимые значения: 'male' или 'female'",
+        examples=["female", "male"]
     )
     age: float = Field(
         ..., 
         ge=0, 
         le=120, 
-        description="Возраст пассажира",
+        title="Возраст",
+        description="Возраст пассажира в годах. Допустимый диапазон: 0-120",
         example=22.0
     )
     sibsp: int = Field(
         ..., 
         ge=0, 
         le=10, 
-        description="Количество братьев/сестер на борту",
-        example=1
+        title="Братья/Сёстры",
+        description="Количество братьев или сестёр пассажира на борту. Максимум 10",
+        examples=range(11)
     )
     parch: int = Field(
         ..., 
         ge=0, 
         le=10, 
-        description="Количество родителей/детей на борту",
-        example=0
+        title="Родители/Дети",
+        description="Количество родителей или детей пассажира на борту. Максимум 10",
+        examples=range(11)
     )
     fare: float = Field(
         ..., 
         ge=0, 
-        description="Стоимость билета",
+        title="Стоимость билета",
+        description="Цена билета в фунтах стерлингов. Должна быть неотрицательным числом",
         example=7.25
     )
     embarked: str = Field(
         ..., 
         pattern="^(C|Q|S)$", 
-        description="Порт посадки (C=Cherbourg, Q=Queenstown, S=Southampton)",
-        example="S"
+        title="Порт посадки",
+        description="Порт, где пассажир сел на корабль: C = Cherbourg, Q = Queenstown, S = Southampton",
+        examples=["C", "Q", "S"]
     )
 
-@app.get("/")
+# Модель ответа для документации
+class PredictionResponse(BaseModel):
+    prediction: int = Field(..., description="0 = погиб, 1 = выжил")
+    survived: bool = Field(..., description="True если пассажир выжил, иначе False")
+    survived_text: bool = Field(..., description="Выжил/Погиб")
+    input_data: dict = Field(..., description="Входные данные, использованные для предсказания")
+
+@app.get("/", tags=["Главная страница"])
 def root():
+    """
+    Главная страница сервиса.
+    
+    Возвращает статус работы ML-сервиса.
+    """
     return {"message": "ML Service is running!"}
 
-@app.post("/predict")
-def predict(data: InputData):
+@app.post("/predict", response_model=PredictionResponse, tags=["Предсказание судьбы для пассажира"])
+def predict(
+    data: InputData
+):
+    """
+    Предсказание выживания пассажира Титаника.
+    
+    **Как это работает:**
+    - Модель анализирует данные пассажира
+    - Возвращает вероятность выживания (0 или 1)
+    
+    **Примеры успешных запросов:**
+    - Женщина, 1 класс, 25 лет → высокий шанс выживания
+    - Мужчина, 3 класс, 40 лет → низкий шанс выживания
+    
+    **Валидация:**
+    - Все поля обязательны
+    - Значения должны соответствовать указанным ограничениям
+    """
     # Преобразуем данные Pydantic в словарь
     input_dict = data.dict()
     
     # Создаем DataFrame (1 строка), чтобы модель поняла имена колонок
-    # Это важно, так как в Pipeline мы использовали имена колонок
     input_df = pd.DataFrame([input_dict])
     
     # Делаем предсказание
     prediction = model.predict(input_df)[0]
     
-    # Возвращаем результат (0 - погиб, 1 - выжил)
-    return {"prediction": int(prediction), "survived": bool(prediction), "survived_text": "Выжил" if bool(prediction) else "Погиб"}
+    # Возвращаем результат
+    return {
+        "prediction": int(prediction), 
+        "survived": bool(prediction),
+        "survived_text": "Выжил" if bool(prediction) else "Погиб",
+        "input_data": input_dict
+    }
+
+@app.get("/health", tags=["Проверка доступности сервиса"])
+def health_check():
+    """
+    Проверка здоровья сервиса.
+    
+    Используется для мониторинга доступности сервиса.
+    """
+    return {"status": "healthy"}
