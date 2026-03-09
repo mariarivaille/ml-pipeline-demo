@@ -25,7 +25,8 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest tests/ -v
+        # Запускаем тесты с флагом -v (verbose)
+        pytest tests/test_main.py -v
 
     - name: Build Docker image
       run: docker build -t gigachat-bot-test .

@@ -3,8 +3,10 @@ from fastapi.testclient import TestClient
 import sys
 import os
 
-# Добавляем корень проекта в путь для импорта
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Гарантируем правильный путь для импорта app в CI и локально
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
 
 from app.main import app
 
@@ -28,7 +30,8 @@ def test_frontend_page():
 def test_chat_api_structure():
     """
     Тест структуры API чата.
-    Примечание: без валидного API_KEY вернётся 500, что тоже является проверкой.
+    Если API_KEY нет (в CI), сервер вернет 500. Это ожидаемое поведение.
+    Если ключ есть, вернет 200.
     """
     payload = {
         "messages": [
@@ -39,7 +42,7 @@ def test_chat_api_structure():
     }
     response = client.post("/api/chat", json=payload)
     
-    # Либо 200 (если ключ валиден), либо 500 (если ключа нет)
+    # Разрешаем и 200 (успех), и 500 (нет ключа в CI)
     assert response.status_code in [200, 500]
     
     if response.status_code == 200:
@@ -53,7 +56,7 @@ def test_chat_api_empty_messages():
         "temperature": 0.7
     }
     response = client.post("/api/chat", json=payload)
-    # Пустой массив может вызвать ошибку валидации или логики
+    # Pydantic может отклонить пустой список (422) или сервер вернет ошибку (500)
     assert response.status_code in [200, 422, 500]
 
 
@@ -66,5 +69,5 @@ def test_chat_api_invalid_role():
         "temperature": 0.7
     }
     response = client.post("/api/chat", json=payload)
-    # FastAPI должен отклонить некорректные данные
+    # Pydantic валидация (422) или ошибка сервера (500)
     assert response.status_code in [200, 422, 500]
