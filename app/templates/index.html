@@ -4,108 +4,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwen 2.5 Chatbot</title>
+    <title>GigaChat Bot</title>
     <style>
-        body {
-            font-family: sans-serif;
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        #chat-box {
-            border: 1px solid #ccc;
-            padding: 1rem;
-            height: 400px;
-            overflow-y: scroll;
-            margin-bottom: 1rem;
-            border-radius: 8px;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f5f5f5;
         }
 
         .message {
-            margin-bottom: 10px;
-            padding: 8px;
-            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
         }
 
-        .user {
-            background-color: #e3f2fd;
-            text-align: right;
+        .message.user {
+            align-items: flex-end;
         }
 
-        .bot {
-            background-color: #f5f5f5;
-            text-align: left;
+        .message.bot {
+            align-items: flex-start;
         }
 
-        input[type="text"] {
-            width: 70%;
-            padding: 10px;
+        .message-content {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
         }
 
-        button {
-            padding: 10px 20px;
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .loading {
-            color: gray;
-            font-style: italic;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
-    <h1>🤖 Qwen 2.5 (0.5B) Chat</h1>
-    <div id="chat-box"></div>
-    <form id="chat-form">
-        <input type="text" id="user-input" placeholder="Введите сообщение..." required>
-        <button type="submit">Отправить</button>
-    </form>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 GigaChat Bot</h1>
+            <p>Задайте любой вопрос искусственному интеллекту</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    Привет! Я GigaChat Bot. Чем могу помочь?
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Введите ваше сообщение..." autocomplete="off">
+            <button id="sendButton" onclick="sendMessage()">
+                Отправить
+            </button>
+        </div>
+    </div>
 
     <script>
-        const chatBox = document.getElementById('chat-box');
-        const form = document.getElementById('chat-form');
-        const input = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        let messageHistory = [];
 
-        function appendMessage(text, sender) {
-            const div = document.createElement('div');
-            div.className = `message ${sender}`;
-            div.innerText = text;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = input.value;
-            if (!message) return;
-
-            appendMessage(message, 'user');
-            input.value = '';
-
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message bot loading';
-            loadingDiv.innerText = 'Печатает...';
-            chatBox.appendChild(loadingDiv);
-
-            try {
-                const formData = new FormData();
-                formData.append('message', message);
-
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                chatBox.removeChild(loadingDiv);
-                appendMessage(data.response, 'bot');
-            } catch (error) {
-                chatBox.removeChild(loadingDiv);
-                appendMessage('Ошибка соединения', 'bot');
+        messageInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         });
+
+        function addMessage(content, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            messageHistory.push({ role: "user", content: message });
+            messageInput.value = '';
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: messageHistory,
+                        temperature: 0.7,
+                        top_p: 0.1
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Ошибка сервера');
+                }
+
+                const data = await response.json();
+                addMessage(data.response, false);
+                messageHistory.push({ role: "assistant", content: data.response });
+
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `Ошибка: ${error.message}`;
+                chatMessages.appendChild(errorDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } finally {
+                sendButton.disabled = false;
+                sendButton.innerHTML = 'Отправить';
+            }
+        }
     </script>
 </body>
 

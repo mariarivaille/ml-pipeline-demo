@@ -1,36 +1,30 @@
+version: '3.8'
+
 services:
-  chatbot-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        # Передаем токен для скачивания модели при сборке
-        HF_TOKEN: ${HF_TOKEN}
-    container_name: chatbot-api
+  gigachat-bot:
+    build: .
+    container_name: gigachat-app
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DEMO_MODE=${DEMO_MODE:-false}
-      - MODEL_PATH=/models/qwen2.5-0.5b-instruct-q5_k_m.gguf
-      - MAX_TOKENS=256
-      - LOG_LEVEL=INFO
-    volumes:
-      # Кэшируем модель, чтобы не скачивать при каждом запуске
-      - model_cache:/models
-    # Ресурсы для CPU
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 4G
-    restart: unless-stopped
+      - PYTHONUNBUFFERED=1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s  # Даем время на загрузку модели
-
-volumes:
-  model_cache:
-    driver: local
+    volumes:
+      - .:/app
+  
+  # Сервис для запуска тестов (запускается вручную)
+  test:
+    build: .
+    container_name: gigachat-tests
+    env_file:
+      - .env
+    command: pytest tests/ -v
+    profiles:
+      - test
