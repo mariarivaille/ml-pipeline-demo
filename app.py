@@ -50,7 +50,7 @@ class InputData(BaseModel):
         ge=0,
         title="Родители/Дети",
         description="Количество родителей или детей пассажира на борту",
-        examples=2
+        example=2
     )
     fare: float = Field(
         ..., 
