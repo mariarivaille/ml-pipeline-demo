@@ -60,8 +60,10 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-          ${{ env.DOCKER_IMAGE }}:latest
+          ${{ secrets.DOCKER_USERNAME }}/gigachat-bot:${{ github.sha }}
+          ${{ secrets.DOCKER_USERNAME }}/gigachat-bot:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Image digest
       run: echo ${{ steps.build.outputs.digest }}
