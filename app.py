@@ -71,7 +71,7 @@ class InputData(BaseModel):
 class PredictionResponse(BaseModel):
     prediction: int = Field(..., description="0 = погиб, 1 = выжил")
     survived: bool = Field(..., description="True если пассажир выжил, иначе False")
-    survived_text: bool = Field(..., description="Выжил/Погиб")
+    survived_text: str = Field(..., description="Выжил/Погиб")
     input_data: dict = Field(..., description="Входные данные, использованные для предсказания")
 
 @app.get("/", tags=["Главная страница"])
