@@ -40,19 +40,17 @@ class InputData(BaseModel):
     )
     sibsp: int = Field(
         ..., 
-        ge=0, 
-        le=10, 
+        ge=0,
         title="Братья/Сёстры",
-        description="Количество братьев или сестёр пассажира на борту. Максимум 10",
-        examples=range(11)
+        description="Количество братьев или сестёр пассажира на борту",
+        example=1
     )
     parch: int = Field(
         ..., 
-        ge=0, 
-        le=10, 
+        ge=0,
         title="Родители/Дети",
-        description="Количество родителей или детей пассажира на борту. Максимум 10",
-        examples=range(11)
+        description="Количество родителей или детей пассажира на борту",
+        examples=2
     )
     fare: float = Field(
         ..., 
