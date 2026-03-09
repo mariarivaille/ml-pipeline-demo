@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen 2.5 Chatbot</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        #chat-box {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            height: 400px;
+            overflow-y: scroll;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .user {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+
+        .bot {
+            background-color: #f5f5f5;
+            text-align: left;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        .loading {
+            color: gray;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🤖 Qwen 2.5 (0.5B) Chat</h1>
+    <div id="chat-box"></div>
+    <form id="chat-form">
+        <input type="text" id="user-input" placeholder="Введите сообщение..." required>
+        <button type="submit">Отправить</button>
+    </form>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('user-input');
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerText = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = input.value;
+            if (!message) return;
+
+            appendMessage(message, 'user');
+            input.value = '';
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot loading';
+            loadingDiv.innerText = 'Печатает...';
+            chatBox.appendChild(loadingDiv);
+
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                chatBox.removeChild(loadingDiv);
+                appendMessage(data.response, 'bot');
+            } catch (error) {
+                chatBox.removeChild(loadingDiv);
+                appendMessage('Ошибка соединения', 'bot');
+            }
+        });
+    </script>
+</body>
+
+</html>

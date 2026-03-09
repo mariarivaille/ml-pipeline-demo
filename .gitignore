@@ -8,10 +8,6 @@ venv/
 env/
 .env
 
-# Models
-models/*
-!models/.gitkeep
-
 # IDE
 .vscode/
 .idea/
