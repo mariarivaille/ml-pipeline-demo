@@ -76,7 +76,7 @@ async def chat_with_gigachat(chat_request: ChatRequest):
             profanity_check=False,
             scope="GIGACHAT_API_CORP"
         ) as client:
-            response = await client.chat({  # ← асинхронный метод
+            response = await client.achat({  # ← асинхронный метод
                 "messages": [msg.dict() for msg in chat_request.messages],
                 "repetition_penalty": 1,
                 "stream": True,
