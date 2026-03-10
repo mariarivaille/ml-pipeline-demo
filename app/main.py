@@ -48,6 +48,7 @@ class ChatRequest(BaseModel):
     messages: List[Message]
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.1
+    max_tokens: Optional[int] = 32000
 
 
 class ChatResponse(BaseModel):
@@ -75,11 +76,14 @@ async def chat_with_gigachat(chat_request: ChatRequest):
             profanity_check=False,
             scope="GIGACHAT_API_CORP"
         ) as client:
-            response = await client.chat(  # ← асинхронный метод
-                messages=[msg.dict() for msg in chat_request.messages],
-                temperature=chat_request.temperature,
-                top_p=chat_request.top_p,
-            )
+            response = await client.chat({  # ← асинхронный метод
+                "messages": [msg.dict() for msg in chat_request.messages],
+                "repetition_penalty": 1,
+                "stream": True,
+                "temperature": chat_request.temperature,
+                "top_p": chat_request.top_p,
+                "max_tokens": chat_request.max_tokens
+            })
             
             if response.choices:
                 return ChatResponse(response=response.choices[0].message.content)
