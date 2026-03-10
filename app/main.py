@@ -75,7 +75,7 @@ async def chat_with_gigachat(chat_request: ChatRequest):
             profanity_check=False,
             scope="GIGACHAT_API_CORP"
         ) as client:
-            response = await client.achat(  # ← асинхронный метод
+            response = await client.chat(  # ← асинхронный метод
                 messages=[msg.dict() for msg in chat_request.messages],
                 temperature=chat_request.temperature,
                 top_p=chat_request.top_p,
