@@ -7,7 +7,13 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import httpx
+from gigachat import GigaChat  # ← Импортируем официальную библиотеку
+from gigachat.exceptions import (
+    AuthenticationError,
+    RateLimitError,
+    BadRequestError,
+    ServerError,
+)
 from dotenv import load_dotenv
 
 # Загрузка переменных окружения
@@ -18,17 +24,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="GigaChat Bot API")
-
-# Подключение шаблонов
 templates = Jinja2Templates(directory="app/templates")
 
-# Конфигурация GigaChat
-GIGACHAT_API_KEY = os.getenv("GIGACHAT_API_KEY")
-GIGACHAT_URL = "https://gigachat.devices.sberbank.ru/api/v2/chat/completions"
-MODEL_NAME = "GigaChat"
+# Конфигурация — теперь достаточно только ключа
+GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS")
+GIGACHAT_API_URL = os.getenv("GIGACHAT_API_URL")
+GIGACHAT_MODEL = os.getenv("GIGACHAT_MODEL")
 
-if not GIGACHAT_API_KEY:
-    logger.warning("GIGACHAT_API_KEY не найден в переменных окружения!")
+if not GIGACHAT_CREDENTIALS:
+    logger.warning("GIGACHAT_CREDENTIALS не найден в переменных окружения!")
+if not GIGACHAT_API_URL:
+    logger.warning("GIGACHAT_API_URL не найден в переменных окружения!")
+if not GIGACHAT_MODEL:
+    logger.warning("GIGACHAT_MODEL не найден в переменных окружения!")
 
 
 class Message(BaseModel):
@@ -48,44 +56,47 @@ class ChatResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def get_frontend(request: Request):
-    """Отдаёт главную страницу с интерфейсом чата."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_with_gigachat(chat_request: ChatRequest):
-    """API эндпоинт для общения с GigaChat."""
-    if not GIGACHAT_API_KEY:
-        raise HTTPException(status_code=500, detail="API Key не настроен на сервере")
-
-    headers = {
-        "Authorization": f"Bearer {GIGACHAT_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [msg.dict() for msg in chat_request.messages],
-        "temperature": chat_request.temperature,
-        "top_p": chat_request.top_p,
-        "stream": False
-    }
+    if not GIGACHAT_CREDENTIALS:
+        raise HTTPException(status_code=500, detail="API Key не настроен")
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(GIGACHAT_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        async with GigaChat(
+            base_url=GIGACHAT_API_URL,
+            credentials=GIGACHAT_CREDENTIALS,
+            access_token=GIGACHAT_CREDENTIALS,
+            model=GIGACHAT_MODEL,
+            verify_ssl_certs=False,
+            timeout=300,
+            profanity_check=False,
+            scope="GIGACHAT_API_CORP"
+        ) as client:
+            response = await client.achat(  # ← асинхронный метод
+                messages=[msg.dict() for msg in chat_request.messages],
+                temperature=chat_request.temperature,
+                top_p=chat_request.top_p,
+            )
+            
+            if response.choices:
+                return ChatResponse(response=response.choices[0].message.content)
+            raise HTTPException(status_code=502, detail="Пустой ответ от GigaChat")
 
-            if "choices" in data and len(data["choices"]) > 0:
-                bot_message = data["choices"][0]["message"]["content"]
-                return ChatResponse(response=bot_message)
-            else:
-                raise HTTPException(status_code=502, detail="Некорректный ответ от GigaChat API")
-
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
-        raise HTTPException(status_code=e.response.status_code, detail="Ошибка при запросе к GigaChat")
+    except (AuthenticationError, RateLimitError, BadRequestError, ServerError) as e:
+        logger.error(f"GigaChat error: {type(e).__name__} - {e}")
+        status_map = {
+            AuthenticationError: 401,
+            RateLimitError: 429,
+            BadRequestError: 400,
+            ServerError: 502,
+        }
+        raise HTTPException(
+            status_code=status_map.get(type(e), 500),
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
@@ -93,5 +104,4 @@ async def chat_with_gigachat(chat_request: ChatRequest):
 
 @app.get("/health")
 async def health_check():
-    """Эндпоинт для проверки здоровья сервиса."""
     return {"status": "ok"}
