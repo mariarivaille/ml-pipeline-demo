@@ -3,7 +3,7 @@ version: '3.8'
 services:
   gigachat-bot:
     # Для production: используем образ из Docker Hub
-    image: ${DOCKER_USERNAME:-yourusername}/gigachat-bot:latest
+    image: ${DOCKER_USERNAME:-mariarivaille}/gigachat-bot:latest
     # Для local development: раскомментируйте строку ниже
     # build: .
     container_name: gigachat-app
