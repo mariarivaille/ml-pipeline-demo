@@ -3,7 +3,7 @@ fastapi==0.109.0
 uvicorn==0.27.0
 
 # GigaChat SDK (заменяет прямые вызовы через httpx)
-gigachat==0.1.28
+gigachat>=0.1.30
 
 # Configuration & validation
 python-dotenv==1.0.0
