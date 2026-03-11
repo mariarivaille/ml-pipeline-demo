@@ -23,7 +23,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="GigaChat Bot API")
+app = FastAPI(title="GigaChat Bot API. Я крутой")
 templates = Jinja2Templates(directory="app/templates")
 
 # Конфигурация — теперь достаточно только ключа

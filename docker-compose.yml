@@ -26,6 +26,7 @@ services:
       - ./app/templates:/app/app/templates
     networks:
       - gigachat-network
+    
 
   # Сервис для запуска тестов (опционально)
   test:
